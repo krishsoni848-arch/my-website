@@ -3,16 +3,13 @@ var stage;
 var container;
 var captureContainers;
 var captureIndex;
+var text;
 
 function init() {
   canvas = document.getElementById("testCanvas");
   stage = new createjs.Stage(canvas);
 
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-
-  var w = canvas.width;
-  var h = canvas.height;
+  resizeCanvas();
 
   container = new createjs.Container();
   stage.addChild(container);
@@ -20,38 +17,62 @@ function init() {
   captureContainers = [];
   captureIndex = 0;
 
-  // 🔥 Middle finger images create karo
-  for (var i = 0; i < 80; i++) {
+  // 🖕 Middle finger images (controlled count & size)
+  for (var i = 0; i < 30; i++) {
     var mf = new createjs.Bitmap("middlefinger.png");
 
     mf.y = -100;
-    mf.x = Math.random() * w;
+    mf.x = Math.random() * canvas.width;
 
-    mf.scaleX = mf.scaleY = Math.random() * 0.4 + 0.2;
-    mf.alpha = Math.random() * 0.8 + 0.2;
+    mf.scaleX = mf.scaleY = Math.random() * 0.2 + 0.1;
+    mf.alpha = Math.random() * 0.7 + 0.3;
 
     container.addChild(mf);
   }
 
-  // 🖕 Text (optional – change/remove if you want)
-  var text = new createjs.Text(
-    "I don't care anymore 😎",
-    "bold 28px Arial",
+  // 📱 Responsive Text
+  var fontSize = Math.max(36, Math.floor(window.innerWidth / 12));
+
+  text = new createjs.Text(
+    "For My Close One",
+    "bold " + fontSize + "px Arial",
     "#ff0040"
   );
+
   text.textAlign = "center";
-  text.x = w / 2;
-  text.y = h / 2;
+  text.textBaseline = "middle";
+  text.x = canvas.width / 2;
+  text.y = canvas.height / 2;
+  text.shadow = new createjs.Shadow("#000", 2, 2, 10);
+
   stage.addChild(text);
 
-  for (var i = 0; i < 100; i++) {
-    var captureContainer = new createjs.Container();
-    captureContainer.cache(0, 0, w, h);
-    captureContainers.push(captureContainer);
+  // Motion blur containers
+  captureContainers = [];
+  for (var i = 0; i < 80; i++) {
+    var cc = new createjs.Container();
+    cc.cache(0, 0, canvas.width, canvas.height);
+    captureContainers.push(cc);
   }
 
   createjs.Ticker.timingMode = createjs.Ticker.RAF;
   createjs.Ticker.on("tick", tick);
+
+  window.addEventListener("resize", resizeCanvas);
+}
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  if (text) {
+    var fontSize = Math.max(36, Math.floor(window.innerWidth / 12));
+    text.font = "bold " + fontSize + "px Arial";
+    text.x = canvas.width / 2;
+    text.y = canvas.height / 2;
+  }
+
+  stage.update();
 }
 
 function tick(event) {
@@ -62,9 +83,9 @@ function tick(event) {
   captureIndex = (captureIndex + 1) % captureContainers.length;
   stage.removeChildAt(0);
 
-  var captureContainer = captureContainers[captureIndex];
-  stage.addChildAt(captureContainer, 0);
-  captureContainer.addChild(container);
+  var cc = captureContainers[captureIndex];
+  stage.addChildAt(cc, 0);
+  cc.addChild(container);
 
   for (var i = 0; i < l; i++) {
     var mf = container.getChildAt(i);
@@ -77,10 +98,8 @@ function tick(event) {
       mf.offX = Math.random() * h;
       mf.ampX = mf.perX * 0.1 * (0.15 + Math.random());
 
-      mf.velY = -Math.random() * 2 - 1;
+      mf.velY = -Math.random() * 1 - 0.5;
       mf._rotation = Math.random() * 40 - 20;
-
-      mf.alpha = Math.random() * 0.8 + 0.2;
     }
 
     var angle = (mf.offX + mf.y) / mf.perX * Math.PI * 2;
@@ -90,7 +109,7 @@ function tick(event) {
     mf.rotation = mf._rotation + Math.sin(angle) * 30;
   }
 
-  captureContainer.updateCache("source-over");
+  cc.updateCache("source-over");
   stage.update(event);
 }
 
